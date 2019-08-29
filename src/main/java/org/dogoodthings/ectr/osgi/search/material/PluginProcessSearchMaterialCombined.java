@@ -15,6 +15,8 @@ import com.dscsag.plm.spi.interfaces.process.DefaultPluginProcessContainer;
 import com.dscsag.plm.spi.interfaces.process.PluginProcessContainer;
 
 /**
+ * combines search material by description and by number (number OR description)
+ * by executing two searches in parallel using executor service
  */
 public class PluginProcessSearchMaterialCombined extends PluginProcessSearch
 {
@@ -29,6 +31,8 @@ public class PluginProcessSearchMaterialCombined extends PluginProcessSearch
 
     List<PlmObjectKey> firstList = first.get();
     List<PlmObjectKey> secondList = second.get();
+
+    executorService.shutdown();
 
     List<PlmObjectKey> combinedList = combineResult(firstList,secondList);
 

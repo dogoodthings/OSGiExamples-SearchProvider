@@ -51,16 +51,18 @@ public abstract class PluginProcessSearchMaterial extends PluginProcessRfcSearch
   protected RfcCallBuilder prepareRfcCallBuilder(String searchTerm, int maxHits)
   {
     RfcCallBuilder rfcCallBuilder = new RfcCallBuilder("/DSCSAG/MAT_GETLIST2");
-    rfcCallBuilder.setInputParameter(" IV_GET_MARA_DETAILS"," ");
-    rfcCallBuilder.setInputParameter(" IV_MAXMATHITS",String.valueOf(maxHits));
-    rfcCallBuilder.setInputParameter(" IV_MAXROWS",String.valueOf(maxHits));
+    rfcCallBuilder.setInputParameter("IV_GET_MARA_DETAILS"," ");
+    rfcCallBuilder.setInputParameter("IV_MAXDETAILS","0");
+    rfcCallBuilder.setInputParameter("IV_MAXMATHITS",String.valueOf(maxHits));
+    rfcCallBuilder.setInputParameter("IV_MAXROWS",String.valueOf(maxHits));
+    rfcCallBuilder.setInputParameter("IV_RECURSIVE"," ");
     return rfcCallBuilder;
   }
 
   protected List<PlmObjectKey> createResult(RfcResult rfcResult)
   {
     List<PlmObjectKey> searchResult = new ArrayList<>();
-    RfcTable mats = rfcResult.getTable("ET_OUT_MORE_MATERIALS");
+    RfcTable mats = rfcResult.getTable("OUT_MATNUMS");
     for(int i=0;i<mats.getRowCount();i++)
       searchResult.add(new PlmObjectKey("MARA",mats.getRow(i).getFieldValue("MATERIAL")));
     return searchResult;
