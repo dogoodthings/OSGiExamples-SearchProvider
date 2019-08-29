@@ -12,7 +12,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<ectr.installation.directory>C:\Program Files (x86)\SAP\ECTR</ectr.installation.directory>
-		<bundle.activator>osgi.Activator</bundle.activator>
+		<bundle.activator>org.dogoodthings.ectr.osgi.Activator</bundle.activator>
 		<bundle.import-packages></bundle.import-packages>
 	</properties>
 
