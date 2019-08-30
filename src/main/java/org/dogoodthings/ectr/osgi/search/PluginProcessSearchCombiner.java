@@ -1,51 +1,75 @@
-package org.dogoodthings.ectr.osgi.search.material;
+package org.dogoodthings.ectr.osgi.search;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.dogoodthings.ectr.osgi.search.PluginProcessSearch;
+import java.util.stream.Collectors;
 
 import com.dscsag.plm.spi.interfaces.objects.PlmObjectKey;
+import com.dscsag.plm.spi.interfaces.process.ContainerKey;
 import com.dscsag.plm.spi.interfaces.process.DefaultPluginProcessContainer;
 import com.dscsag.plm.spi.interfaces.process.PluginProcessContainer;
 
 /**
- * combines search material by description and by number (number OR description)
- * by executing two searches in parallel using executor service
+
  */
-public class PluginProcessSearchMaterialCombined extends PluginProcessSearch
+public class PluginProcessSearchCombiner extends PluginProcessSearch
 {
+  public static ContainerKey<List<PluginProcessSearch>> IN_SEARCH_PROCESSES = new ContainerKey<>("SEARCH_PROCESSES");
+
   @Override
   public PluginProcessContainer execute(PluginProcessContainer pluginProcessContainer) throws Exception
   {
     String searchTerm = pluginProcessContainer.getParameter(IN_SEARCH_TERM);
     int maxHits = pluginProcessContainer.getParameter(IN_MAX_HITS);
-    ExecutorService executorService = Executors.newFixedThreadPool(2);
-    Future<List<PlmObjectKey>> first = executorService.submit(new SearchCallable(searchTerm,maxHits,new PluginProcessSearchMaterialByDescription()));
-    Future<List<PlmObjectKey>> second = executorService.submit(new SearchCallable(searchTerm,maxHits,new PluginProcessSearchMaterialByNumber()));
+    List<PluginProcessSearch> processes = pluginProcessContainer.getParameter(IN_SEARCH_PROCESSES);
+    ExecutorService executorService = Executors.newFixedThreadPool(processes.size());
 
-    List<PlmObjectKey> firstList = first.get();
-    List<PlmObjectKey> secondList = second.get();
-
+    List<List<PlmObjectKey>> collect = processes.stream()
+        .map(x -> new SearchCallable(searchTerm, maxHits, x))
+        .map(executorService::submit)
+        .map(this::resolveFuture)
+        .collect(Collectors.toList());
     executorService.shutdown();
 
-    List<PlmObjectKey> combinedList = combineResult(firstList,secondList);
+    List<PlmObjectKey> combinedList = combineResult(collect, maxHits);
 
     DefaultPluginProcessContainer returnContainer = new DefaultPluginProcessContainer();
     returnContainer.setParameter(OUT_FOUND_KEYS,combinedList);
     return returnContainer;
   }
 
-  private List<PlmObjectKey> combineResult(List<PlmObjectKey> firstList, List<PlmObjectKey> secondList)
+  private List<PlmObjectKey> resolveFuture(Future<List<PlmObjectKey>> future)
+  {
+    try
+    {
+      return future.get();
+    }
+    catch (Exception e)
+    {
+      return Collections.emptyList();
+    }
+  }
+
+  private List<PlmObjectKey> combineResult(List<List<PlmObjectKey>> collect, int maxHits)
   {
     LinkedHashSet<PlmObjectKey> set = new LinkedHashSet<>();
-    firstList.stream().forEach(set::add);
-    secondList.stream().forEach(set::add);
+    for(int i=0;i<maxHits && set.size()<=maxHits;i++)
+    {
+      for(List<PlmObjectKey> list:collect)
+      {
+        if(set.size()<maxHits)
+        {
+          if (i < list.size())
+            set.add(list.get(i));
+        }
+      }
+    }
     return new ArrayList<>(set);
   }
 
@@ -72,5 +96,4 @@ public class PluginProcessSearchMaterialCombined extends PluginProcessSearch
       return returnContainer.getParameter(OUT_FOUND_KEYS);
     }
   }
-
 }

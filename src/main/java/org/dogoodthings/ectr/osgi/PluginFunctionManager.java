@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.dogoodthings.ectr.osgi.search.material.PluginFunctionTestCombinedSearch;
+import org.dogoodthings.ectr.osgi.search.testing.PluginFunctionTestCombinedSearch;
 
 import com.dscsag.plm.spi.interfaces.gui.PluginFunction;
 import com.dscsag.plm.spi.interfaces.gui.PluginFunctionService;

@@ -1,11 +1,17 @@
+package org.dogoodthings.ectr.osgi.search.testing;
 
-package org.dogoodthings.ectr.osgi.search.material;
-
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JOptionPane;
 
+import org.dogoodthings.ectr.osgi.ECTRServiceHolder;
 import org.dogoodthings.ectr.osgi.search.PluginProcessSearch;
+import org.dogoodthings.ectr.osgi.search.PluginProcessSearchCombiner;
+import org.dogoodthings.ectr.osgi.search.changeNumber.PluginProcessSearchChangeNumberByDescription;
+import org.dogoodthings.ectr.osgi.search.changeNumber.PluginProcessSearchChangeNumberByNumber;
+import org.dogoodthings.ectr.osgi.search.material.PluginProcessSearchMaterialByDescription;
+import org.dogoodthings.ectr.osgi.search.material.PluginProcessSearchMaterialByNumber;
 
 import com.dscsag.plm.spi.interfaces.gui.PluginFunction;
 import com.dscsag.plm.spi.interfaces.gui.PluginRequest;
@@ -25,11 +31,18 @@ public class PluginFunctionTestCombinedSearch implements PluginFunction
     DefaultPluginProcessContainer container = new DefaultPluginProcessContainer();
     container.setParameter(PluginProcessSearch.IN_MAX_HITS,50);
     container.setParameter(PluginProcessSearch.IN_SEARCH_TERM,searchTerm);
-    PluginProcessSearchMaterialCombined processSearchMaterialCombined = new PluginProcessSearchMaterialCombined();
+    List<PluginProcessSearch> processes = new ArrayList<>();
+    processes.add(new PluginProcessSearchChangeNumberByDescription());
+    processes.add(new PluginProcessSearchChangeNumberByNumber());
+    processes.add(new PluginProcessSearchMaterialByDescription());
+    processes.add(new PluginProcessSearchMaterialByNumber());
+    container.setParameter(PluginProcessSearchCombiner.IN_SEARCH_PROCESSES, processes);
+    PluginProcessSearchCombiner processSearchCombined = new PluginProcessSearchCombiner();
     try
     {
-      PluginProcessContainer result = processSearchMaterialCombined.execute(container);
+      PluginProcessContainer result = processSearchCombined.execute(container);
       List<PlmObjectKey> keys = result.getParameter(PluginProcessSearch.OUT_FOUND_KEYS);
+      keys.stream().map(String::valueOf).forEach(ECTRServiceHolder.getEctrService().getPlmLogger()::trace);
       pluginResponse = PluginResponseFactory.infoResponse("found "+keys.size() + " objects.");
     }
     catch (Exception e)
