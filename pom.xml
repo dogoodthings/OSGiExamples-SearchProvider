@@ -9,8 +9,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
 		<ectr.installation.directory>C:\Program Files (x86)\SAP\ECTR</ectr.installation.directory>
 		<bundle.activator>org.dogoodthings.ectr.osgi.Activator</bundle.activator>
 		<bundle.import-packages></bundle.import-packages>
@@ -31,6 +31,18 @@
 			<version>5.2.2.0</version>
 			<scope>system</scope>
 			<systemPath>${ectr.installation.directory}/basis/classes/plm-api.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
 		</dependency>
 
 

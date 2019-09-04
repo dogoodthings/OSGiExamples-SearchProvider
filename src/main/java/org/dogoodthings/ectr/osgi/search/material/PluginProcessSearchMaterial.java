@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.dogoodthings.ectr.osgi.search.PluginProcessRfcSearch;
+import org.dogoodthings.ectr.osgi.search.provider.DefaultSearchHit;
 
 import com.dscsag.plm.spi.interfaces.objects.PlmObjectKey;
 import com.dscsag.plm.spi.interfaces.rfc.RfcResult;
 import com.dscsag.plm.spi.interfaces.rfc.RfcTable;
+import com.dscsag.plm.spi.interfaces.search.SearchHit;
+import com.dscsag.plm.spi.interfaces.search.SearchQuery;
+import com.dscsag.plm.spi.interfaces.search.SearchResult;
 import com.dscsag.plm.spi.rfc.builder.RfcCallBuilder;
 
 /*
@@ -48,24 +52,26 @@ import com.dscsag.plm.spi.rfc.builder.RfcCallBuilder;
 
 public abstract class PluginProcessSearchMaterial extends PluginProcessRfcSearch
 {
-  protected RfcCallBuilder prepareRfcCallBuilder(String searchTerm, int maxHits)
+  @Override
+  protected RfcCallBuilder prepareRfcCallBuilder(SearchQuery searchQuery)
   {
     RfcCallBuilder rfcCallBuilder = new RfcCallBuilder("/DSCSAG/MAT_GETLIST2");
     rfcCallBuilder.setInputParameter("IV_GET_MARA_DETAILS"," ");
     rfcCallBuilder.setInputParameter("IV_MAXDETAILS","0");
-    rfcCallBuilder.setInputParameter("IV_MAXMATHITS",String.valueOf(maxHits));
-    rfcCallBuilder.setInputParameter("IV_MAXROWS",String.valueOf(maxHits));
+    rfcCallBuilder.setInputParameter("IV_MAXMATHITS",String.valueOf(searchQuery.getMaxHits()));
+    rfcCallBuilder.setInputParameter("IV_MAXROWS",String.valueOf(searchQuery.getMaxHits()));
     rfcCallBuilder.setInputParameter("IV_RECURSIVE"," ");
     return rfcCallBuilder;
   }
 
-  protected List<PlmObjectKey> createResult(RfcResult rfcResult)
+  @Override
+  protected SearchResult createResult(RfcResult rfcResult)
   {
-    List<PlmObjectKey> searchResult = new ArrayList<>();
+    List<SearchHit> searchResult = new ArrayList<>();
     RfcTable mats = rfcResult.getTable("OUT_MATNUMS");
     for(int i=0;i<mats.getRowCount();i++)
-      searchResult.add(new PlmObjectKey("MARA",mats.getRow(i).getFieldValue("MATERIAL")));
-    return searchResult;
+      searchResult.add(new DefaultSearchHit(new PlmObjectKey("MARA", mats.getRow(i).getFieldValue("MATERIAL")),1.0f));
+    return ()->searchResult;
   }
 
 }

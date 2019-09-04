@@ -1,11 +1,14 @@
 package org.dogoodthings.ectr.osgi;
 
+import org.dogoodthings.ectr.osgi.search.provider.changeNumber.ChangeNumberSearchProvider;
+import org.dogoodthings.ectr.osgi.search.provider.material.MaterialSearchProvider;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
 import com.dscsag.plm.spi.interfaces.ECTRService;
 import com.dscsag.plm.spi.interfaces.gui.PluginFunctionService;
+import com.dscsag.plm.spi.interfaces.search.SearchProvider;
 
 /**
  * Activator to register provided services
@@ -16,6 +19,8 @@ public class Activator implements BundleActivator
   {
     ECTRServiceHolder.setEctrService(getService(context, ECTRService.class));
     context.registerService(PluginFunctionService.class, new PluginFunctionManager(), null);
+    context.registerService(SearchProvider.class, new MaterialSearchProvider(), null);
+    context.registerService(SearchProvider.class, new ChangeNumberSearchProvider(), null);
   }
 
   @Override

@@ -10,10 +10,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import com.dscsag.plm.spi.interfaces.objects.PlmObjectKey;
 import com.dscsag.plm.spi.interfaces.process.ContainerKey;
 import com.dscsag.plm.spi.interfaces.process.DefaultPluginProcessContainer;
 import com.dscsag.plm.spi.interfaces.process.PluginProcessContainer;
+import com.dscsag.plm.spi.interfaces.search.SearchHit;
+import com.dscsag.plm.spi.interfaces.search.SearchQuery;
 
 /**
 
@@ -25,26 +26,26 @@ public class PluginProcessSearchCombiner extends PluginProcessSearch
   @Override
   public PluginProcessContainer execute(PluginProcessContainer pluginProcessContainer) throws Exception
   {
-    String searchTerm = pluginProcessContainer.getParameter(IN_SEARCH_TERM);
-    int maxHits = pluginProcessContainer.getParameter(IN_MAX_HITS);
+    SearchQuery searchQuery = pluginProcessContainer.getParameter(IN_SEARCH_QUERY);
+    int maxHits = searchQuery.getMaxHits();
     List<PluginProcessSearch> processes = pluginProcessContainer.getParameter(IN_SEARCH_PROCESSES);
     ExecutorService executorService = Executors.newFixedThreadPool(processes.size());
 
-    List<List<PlmObjectKey>> collect = processes.stream()
-        .map(x -> new SearchCallable(searchTerm, maxHits, x))
+    List<List<SearchHit>> collect = processes.stream()
+        .map(x -> new SearchCallable(searchQuery, x))
         .map(executorService::submit)
         .map(this::resolveFuture)
         .collect(Collectors.toList());
     executorService.shutdown();
 
-    List<PlmObjectKey> combinedList = combineResult(collect, maxHits);
+    List<SearchHit> combinedList = combineResult(collect, maxHits);
 
     DefaultPluginProcessContainer returnContainer = new DefaultPluginProcessContainer();
-    returnContainer.setParameter(OUT_FOUND_KEYS,combinedList);
+    returnContainer.setParameter(OUT_SEARCH_RESULT, () -> combinedList);
     return returnContainer;
   }
 
-  private List<PlmObjectKey> resolveFuture(Future<List<PlmObjectKey>> future)
+  private List<SearchHit> resolveFuture(Future<List<SearchHit>> future)
   {
     try
     {
@@ -56,12 +57,12 @@ public class PluginProcessSearchCombiner extends PluginProcessSearch
     }
   }
 
-  private List<PlmObjectKey> combineResult(List<List<PlmObjectKey>> collect, int maxHits)
+  private List<SearchHit> combineResult(List<List<SearchHit>> collect, int maxHits)
   {
-    LinkedHashSet<PlmObjectKey> set = new LinkedHashSet<>();
+    LinkedHashSet<SearchHit> set = new LinkedHashSet<>();
     for(int i=0;i<maxHits && set.size()<=maxHits;i++)
     {
-      for(List<PlmObjectKey> list:collect)
+      for(List<SearchHit> list:collect)
       {
         if(set.size()<maxHits)
         {
@@ -73,27 +74,24 @@ public class PluginProcessSearchCombiner extends PluginProcessSearch
     return new ArrayList<>(set);
   }
 
-  private final static class SearchCallable implements Callable<List<PlmObjectKey>>
+  private final static class SearchCallable implements Callable<List<SearchHit>>
   {
-    String searchTerm;
-    int maxHits;
+    SearchQuery searchQuery;
     PluginProcessSearch pluginProcessSearch;
 
-    SearchCallable(String searchTerm, int maxHits, PluginProcessSearch searchProcess)
+    SearchCallable(SearchQuery searchQuery, PluginProcessSearch searchProcess)
     {
-      this.maxHits=maxHits;
-      this.searchTerm=searchTerm;
+      this.searchQuery=searchQuery;
       this.pluginProcessSearch=searchProcess;
     }
 
     @Override
-    public List<PlmObjectKey> call() throws Exception
+    public List<SearchHit> call() throws Exception
     {
       DefaultPluginProcessContainer pluginProcessContainer = new DefaultPluginProcessContainer();
-      pluginProcessContainer.setParameter(IN_SEARCH_TERM,searchTerm);
-      pluginProcessContainer.setParameter(IN_MAX_HITS,maxHits);
+      pluginProcessContainer.setParameter(IN_SEARCH_QUERY,searchQuery);
       PluginProcessContainer returnContainer = pluginProcessSearch.execute(pluginProcessContainer);
-      return returnContainer.getParameter(OUT_FOUND_KEYS);
+      return returnContainer.getParameter(OUT_SEARCH_RESULT).getHits();
     }
   }
 }
