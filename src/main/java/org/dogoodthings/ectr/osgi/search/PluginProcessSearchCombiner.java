@@ -1,8 +1,6 @@
 package org.dogoodthings.ectr.osgi.search;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +36,7 @@ public class PluginProcessSearchCombiner extends PluginProcessSearch
         .collect(Collectors.toList());
     executorService.shutdown();
 
-    List<SearchHit> combinedList = combineResult(collect, maxHits);
+    List<SearchHit> combinedList = ListCombiner.combineLists(collect, maxHits);
 
     DefaultPluginProcessContainer returnContainer = new DefaultPluginProcessContainer();
     returnContainer.setParameter(OUT_SEARCH_RESULT, () -> combinedList);
@@ -55,23 +53,6 @@ public class PluginProcessSearchCombiner extends PluginProcessSearch
     {
       return Collections.emptyList();
     }
-  }
-
-  private List<SearchHit> combineResult(List<List<SearchHit>> collect, int maxHits)
-  {
-    LinkedHashSet<SearchHit> set = new LinkedHashSet<>();
-    for(int i=0;i<maxHits && set.size()<=maxHits;i++)
-    {
-      for(List<SearchHit> list:collect)
-      {
-        if(set.size()<maxHits)
-        {
-          if (i < list.size())
-            set.add(list.get(i));
-        }
-      }
-    }
-    return new ArrayList<>(set);
   }
 
   private final static class SearchCallable implements Callable<List<SearchHit>>

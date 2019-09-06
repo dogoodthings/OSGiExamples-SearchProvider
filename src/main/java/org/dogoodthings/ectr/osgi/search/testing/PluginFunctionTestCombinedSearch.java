@@ -1,13 +1,14 @@
 package org.dogoodthings.ectr.osgi.search.testing;
 
-import java.util.Comparator;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.swing.JOptionPane;
 
 import org.dogoodthings.ectr.osgi.ECTRServiceHolder;
+import org.dogoodthings.ectr.osgi.search.ListCombiner;
 import org.dogoodthings.ectr.osgi.search.provider.DefaultSingleSearchQuery;
 import org.dogoodthings.ectr.osgi.search.provider.changeNumber.ChangeNumberSearchProvider;
 import org.dogoodthings.ectr.osgi.search.provider.material.MaterialSearchProvider;
@@ -29,6 +30,8 @@ public class PluginFunctionTestCombinedSearch implements PluginFunction
     PluginResponse pluginResponse;
     String searchText = JOptionPane.showInputDialog(null, "search for", "*815");
 
+    Instant startTime = Instant.now();
+
     SearchQuery searchQuery = new DefaultSingleSearchQuery(50,searchText);
     SearchTask materialSearchTask = new MaterialSearchProvider().createTask(searchQuery);
     SearchTask changeNumberSearchTask = new ChangeNumberSearchProvider().createTask(searchQuery);
@@ -38,13 +41,16 @@ public class PluginFunctionTestCombinedSearch implements PluginFunction
 
     List<SearchHit> materialHits = materialSearchResult.getHits();
     List<SearchHit> changeNumberHits = changeNumberSearchResult.getHits();
-    List<SearchHit> limitedHits = Stream.concat(materialHits.stream(), changeNumberHits.stream())
-        .sorted(Comparator.comparing(SearchHit::getScore).reversed())
-        .limit(searchQuery.getMaxHits())
-        .collect(Collectors.toList());
-
+    List<SearchHit> limitedHits = ListCombiner.combineLists(Arrays.asList(materialHits, changeNumberHits),searchQuery.getMaxHits());
     limitedHits.stream().map(x -> x.getObjectKey().toString()).forEach(ECTRServiceHolder.getEctrService().getPlmLogger()::trace);
-    pluginResponse = PluginResponseFactory.infoResponse("found " + limitedHits.size() + " objects.");
+    Instant finishedTime = Instant.now();
+    long timeElapsed = Duration.between(startTime,finishedTime).toMillis();
+    String message = "found " + limitedHits.size() + " objects in "+timeElapsed+" ms.";
+    ECTRServiceHolder.getEctrService().getPlmLogger().trace(message);
+    pluginResponse = PluginResponseFactory.infoResponse(message);
     return pluginResponse;
   }
+
+
+
 }
